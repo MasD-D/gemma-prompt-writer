@@ -117,6 +117,36 @@ def find_ollama_binary():
     return None
 
 
+
+def find_obsidian_app():
+    """
+    Detect Obsidian.app on macOS.
+    """
+    candidates = [
+        Path("/Applications/Obsidian.app"),
+        Path.home() / "Applications" / "Obsidian.app",
+    ]
+
+    for item in candidates:
+        if item.exists():
+            return str(item)
+
+    try:
+        result = subprocess.check_output(
+            ["mdfind", "kMDItemCFBundleIdentifier == 'md.obsidian'"],
+            text=True,
+            timeout=5
+        ).strip()
+
+        if result:
+            for line in result.splitlines():
+                if line.endswith("Obsidian.app") and Path(line).exists():
+                    return line
+    except Exception:
+        pass
+
+    return ""
+
 def ensure_ollama_running(status_callback):
     try:
         requests.get(OLLAMA_TAGS_URL, timeout=3)
@@ -365,9 +395,9 @@ class PromptWriterApp:
         env_button_frame.pack(fill="x", padx=pad, pady=(0, 8))
 
         tk.Button(env_button_frame, text="刷新自检", command=self.refresh_environment).pack(side="left", padx=(0, 8))
-        tk.Button(env_button_frame, text="启动 Ollama", command=self.start_ollama).pack(side="left", padx=(0, 8))
+        tk.Button(env_button_frame, text="检查 Ollama 状态", command=self.open_ollama_status_checker).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="推荐 Gemma 模型", command=self.open_model_advisor).pack(side="left", padx=(0, 8))
-        tk.Button(env_button_frame, text="打开 Ollama 官网", command=lambda: webbrowser.open("https://ollama.com/download")).pack(side="left")
+        tk.Button(env_button_frame, text="检查 Obsidian 状态", command=self.open_obsidian_status_checker).pack(side="left")
 
         idea_frame = tk.LabelFrame(self.root, text="画面想法")
         idea_frame.pack(fill="both", padx=pad, pady=6)
@@ -493,6 +523,143 @@ class PromptWriterApp:
                 messagebox.showerror("启动 Ollama 失败", str(e))
 
         threading.Thread(target=worker, daemon=True).start()
+
+
+
+    def open_ollama_status_checker(self):
+        checker_window = tk.Toplevel(self.root)
+        checker_window.title("Ollama 状态检查")
+        checker_window.geometry("680x420")
+
+        result_box = scrolledtext.ScrolledText(checker_window, wrap="word", height=14)
+        result_box.pack(fill="both", expand=True, padx=10, pady=(10, 6))
+
+        button_frame = tk.Frame(checker_window)
+        button_frame.pack(fill="x", padx=10, pady=(4, 10))
+
+        ollama_path = env_check.find_ollama_binary()
+        service_running = env_check.is_ollama_service_running()
+
+        lines = []
+        lines.append("Ollama 状态检查")
+        lines.append("-" * 40)
+
+        if ollama_path:
+            lines.append("检测结果：已检测到 Ollama")
+            lines.append(f"Ollama 路径：{ollama_path}")
+            lines.append(f"Ollama 服务：{'正在运行' if service_running else '未运行'}")
+            lines.append("")
+            lines.append("说明：")
+            lines.append("Ollama 是本 App 调用本地 Gemma 模型所需的本地模型运行环境。")
+            lines.append("如果 Ollama 已安装但服务未运行，可以点击下方“启动 Ollama”。")
+        else:
+            lines.append("检测结果：未检测到 Ollama")
+            lines.append("")
+            lines.append("说明：")
+            lines.append("本 App 需要通过 Ollama 调用本地 Gemma 模型。")
+            lines.append("请先安装 Ollama。安装后回到本 App，点击“刷新自检”或重新检查状态。")
+
+        result_box.insert(tk.END, "\n".join(lines))
+        result_box.config(state="disabled")
+
+        if ollama_path and not service_running:
+            tk.Button(
+                button_frame,
+                text="启动 Ollama",
+                command=lambda: [checker_window.destroy(), self.start_ollama()]
+            ).pack(side="left", padx=(0, 8))
+
+        if not ollama_path:
+            tk.Button(
+                button_frame,
+                text="下载 Ollama",
+                command=lambda: webbrowser.open("https://ollama.com/download")
+            ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            button_frame,
+            text="重新检查",
+            command=lambda: [checker_window.destroy(), self.open_ollama_status_checker()]
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            button_frame,
+            text="关闭",
+            command=checker_window.destroy
+        ).pack(side="right")
+
+    def open_obsidian_status_checker(self):
+        checker_window = tk.Toplevel(self.root)
+        checker_window.title("Obsidian 状态检查")
+        checker_window.geometry("720x520")
+
+        result_box = scrolledtext.ScrolledText(checker_window, wrap="word", height=18)
+        result_box.pack(fill="both", expand=True, padx=10, pady=(10, 6))
+
+        button_frame = tk.Frame(checker_window)
+        button_frame.pack(fill="x", padx=10, pady=(4, 10))
+
+        obsidian_path = find_obsidian_app()
+        current_output_dir = self.output_dir_var.get().strip()
+
+        lines = []
+        lines.append("Obsidian 状态检查")
+        lines.append("-" * 40)
+
+        if obsidian_path:
+            lines.append("检测结果：已检测到 Obsidian")
+            lines.append(f"Obsidian 路径：{obsidian_path}")
+        else:
+            lines.append("检测结果：未检测到 Obsidian")
+
+        lines.append("")
+        lines.append("当前保存目录：")
+        lines.append(current_output_dir if current_output_dir else "尚未选择")
+        lines.append("")
+        lines.append("使用方法：")
+        lines.append("1. 本 App 不直接写入 Obsidian 应用本身，而是把 Markdown 文件写入你选择的文件夹。")
+        lines.append("2. 这个文件夹可以是你的 Obsidian Vault 根目录，也可以是 Vault 里面的某个子文件夹。")
+        lines.append("3. 选择保存目录后，生成的提示词会以 .md 文件形式保存进去。")
+        lines.append("4. Obsidian 通常会自动显示这些新文件；如果没有显示，可以在 Obsidian 里刷新文件列表或重新打开 Vault。")
+        lines.append("")
+        lines.append("如何获取保存目录：")
+        lines.append("1. 在 Finder 中找到你的 Obsidian Vault 文件夹。")
+        lines.append("2. 或者在 Obsidian 中确认当前 Vault 的本地存储位置。")
+        lines.append("3. 如果你想单独管理提示词，可以在 Vault 中新建一个文件夹，例如“图像提示词”，然后在本 App 中选择该文件夹。")
+
+        result_box.insert(tk.END, "\n".join(lines))
+        result_box.config(state="disabled")
+
+        if obsidian_path:
+            tk.Button(
+                button_frame,
+                text="打开 Obsidian",
+                command=lambda: subprocess.Popen(["open", obsidian_path])
+            ).pack(side="left", padx=(0, 8))
+        else:
+            tk.Button(
+                button_frame,
+                text="下载 Obsidian",
+                command=lambda: webbrowser.open("https://obsidian.md/download")
+            ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            button_frame,
+            text="选择 Obsidian 保存目录",
+            command=self.choose_output_dir
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            button_frame,
+            text="重新检查",
+            command=lambda: [checker_window.destroy(), self.open_obsidian_status_checker()]
+        ).pack(side="left", padx=(0, 8))
+
+        tk.Button(
+            button_frame,
+            text="关闭",
+            command=checker_window.destroy
+        ).pack(side="right")
 
 
     def open_model_advisor(self):

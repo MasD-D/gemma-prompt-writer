@@ -87,6 +87,13 @@ Typical use cases:
 - Environment check panel  
   内置环境自检面板
 
+- Dedicated Ollama status checker  
+  独立的 Ollama 状态检查入口
+
+- Dedicated Obsidian status checker  
+  独立的 Obsidian 状态检查入口
+
+
 - Detects Ollama installation status  
   检测 Ollama 是否已安装
 

@@ -13,6 +13,8 @@ from tkinter import filedialog, messagebox, scrolledtext
 
 import requests
 import env_check
+import hardware_check
+import model_advisor
 
 
 APP_SUPPORT_DIR = Path.home() / "Library" / "Application Support" / "Gemma Prompt Writer"
@@ -365,6 +367,7 @@ class PromptWriterApp:
         tk.Button(env_button_frame, text="刷新自检", command=self.refresh_environment).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="启动 Ollama", command=self.start_ollama).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="下载 Gemma4 12B", command=self.pull_gemma_model).pack(side="left", padx=(0, 8))
+        tk.Button(env_button_frame, text="推荐 Gemma 模型", command=self.open_model_advisor).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="打开 Ollama 官网", command=lambda: webbrowser.open("https://ollama.com/download")).pack(side="left")
 
         idea_frame = tk.LabelFrame(self.root, text="画面想法")
@@ -491,6 +494,78 @@ class PromptWriterApp:
                 messagebox.showerror("启动 Ollama 失败", str(e))
 
         threading.Thread(target=worker, daemon=True).start()
+
+
+    def open_model_advisor(self):
+        advisor_window = tk.Toplevel(self.root)
+        advisor_window.title("Gemma 模型推荐器")
+        advisor_window.geometry("720x560")
+
+        status_var = tk.StringVar(value="正在检测设备和本地模型...")
+        tk.Label(advisor_window, textvariable=status_var, anchor="w").pack(fill="x", padx=10, pady=(10, 6))
+
+        result_box = scrolledtext.ScrolledText(advisor_window, wrap="word")
+        result_box.pack(fill="both", expand=True, padx=10, pady=6)
+
+        button_frame = tk.Frame(advisor_window)
+        button_frame.pack(fill="x", padx=10, pady=(4, 10))
+
+        state = {
+            "recommended_model": None
+        }
+
+        def set_text(content):
+            result_box.delete("1.0", tk.END)
+            result_box.insert(tk.END, content)
+
+        def use_recommended_model():
+            model = state.get("recommended_model")
+            if not model:
+                messagebox.showwarning("暂无推荐", "还没有可用的推荐模型。")
+                return
+
+            self.model_var.set(model)
+            self.save_current_config()
+            self.refresh_environment()
+            status_var.set(f"已使用推荐模型：{model}")
+
+        def download_recommended_model():
+            model = state.get("recommended_model")
+            if not model:
+                messagebox.showwarning("暂无推荐", "还没有可用的推荐模型。")
+                return
+
+            self.model_var.set(model)
+            self.save_current_config()
+            advisor_window.destroy()
+            self.pull_gemma_model()
+
+        tk.Button(button_frame, text="使用推荐模型", command=use_recommended_model).pack(side="left", padx=(0, 8))
+        tk.Button(button_frame, text="下载推荐模型", command=download_recommended_model).pack(side="left", padx=(0, 8))
+        tk.Button(button_frame, text="关闭", command=advisor_window.destroy).pack(side="right")
+
+        def worker():
+            try:
+                hardware = hardware_check.get_hardware_profile()
+
+                env_result = env_check.check_environment(self.model_var.get().strip() or DEFAULT_MODEL_NAME)
+                installed_models = env_result.get("models", [])
+
+                advice = model_advisor.recommend_gemma_models(hardware, installed_models)
+                state["recommended_model"] = advice["recommended"]
+
+                content = model_advisor.format_advice_text(hardware, advice)
+
+                self.root.after(0, lambda: status_var.set("检测完成"))
+                self.root.after(0, lambda: set_text(content))
+
+            except Exception as e:
+                log_error(f"模型推荐失败：{e}")
+                self.root.after(0, lambda: status_var.set("模型推荐失败"))
+                self.root.after(0, lambda: set_text(str(e)))
+
+        threading.Thread(target=worker, daemon=True).start()
+
 
     def pull_gemma_model(self):
         model_name = self.model_var.get().strip() or DEFAULT_MODEL_NAME

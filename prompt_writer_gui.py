@@ -1,4 +1,5 @@
 import json
+import sys
 import re
 import time
 import shutil
@@ -24,6 +25,18 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_TAGS_URL = "http://localhost:11434/api/tags"
 
 DEFAULT_MODEL_NAME = "gemma4:12b"
+
+
+def resource_path(relative_path: str) -> Path:
+    """
+    Resolve resource paths both in source mode and PyInstaller app mode.
+    """
+    try:
+        base_path = Path(sys._MEIPASS)
+    except Exception:
+        base_path = Path(__file__).resolve().parent
+
+    return base_path / relative_path
 
 
 PROMPT_SCHEMA = {
@@ -302,8 +315,16 @@ def save_to_obsidian(output_dir, user_idea, markdown):
 class PromptWriterApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Gemma 生图提示词生成器 v0.2")
+        self.root.title("Gemma 生图提示词生成器")
         self.root.geometry("1040x860")
+
+        icon_path = resource_path("assets/app_icon_256.png")
+        if icon_path.exists():
+            try:
+                self.window_icon = tk.PhotoImage(file=str(icon_path))
+                self.root.iconphoto(True, self.window_icon)
+            except Exception as e:
+                log_error(f"设置窗口图标失败：{e}")
 
         self.config = load_config()
 

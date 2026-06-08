@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="Gemma Prompt Writer"
-VERSION="0.3.3"
+VERSION="0.3.4"
 BUILD_NAME="${APP_NAME} v${VERSION}"
 RELEASE_DIR="release"
 ASSETS_DIR="assets"
@@ -35,6 +35,8 @@ echo "==> Building app with PyInstaller..."
 pyinstaller \
   --windowed \
   --name "$BUILD_NAME" \
+  --icon "$ASSETS_DIR/app_icon.icns" \
+  --add-data "$ASSETS_DIR/app_icon_256.png:assets" \
   prompt_writer_gui.py
 
 echo "==> Preparing release folder..."

@@ -45,3 +45,6 @@ prompt_writer.py
 prompt_writer_gui_v0_1_working.py
 prompt_writer_gui_v0_2.py
 templates.csv
+
+# Temporary iconset generated from app icon
+assets/AppIcon.iconset/

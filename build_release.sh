@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="Gemma Prompt Writer"
-VERSION="0.3.5"
+VERSION="0.3.6"
 BUILD_NAME="${APP_NAME} v${VERSION}"
 RELEASE_DIR="release"
 ASSETS_DIR="assets"

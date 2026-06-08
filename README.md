@@ -150,9 +150,9 @@ On first launch, check the Environment panel. The app will show:
 - Whether gemma4:12b is installed  
   gemma4:12b 是否已安装
 
-If gemma4:12b is missing, click "Download Gemma4 12B" inside the app.
+If the target model is missing, use the Model Advisor in the app and click the download button for the recommended model.
 
-如果缺少 gemma4:12b，可以点击 App 内的「下载 Gemma4 12B」。
+如果缺少目标模型，可以点击 App 内的「推荐 Gemma 模型」，再选择「下载推荐模型」。
 
 ### 5. Generate prompts / 生成提示词
 

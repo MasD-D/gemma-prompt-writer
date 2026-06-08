@@ -366,7 +366,6 @@ class PromptWriterApp:
 
         tk.Button(env_button_frame, text="刷新自检", command=self.refresh_environment).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="启动 Ollama", command=self.start_ollama).pack(side="left", padx=(0, 8))
-        tk.Button(env_button_frame, text="下载 Gemma4 12B", command=self.pull_gemma_model).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="推荐 Gemma 模型", command=self.open_model_advisor).pack(side="left", padx=(0, 8))
         tk.Button(env_button_frame, text="打开 Ollama 官网", command=lambda: webbrowser.open("https://ollama.com/download")).pack(side="left")
 
@@ -639,7 +638,7 @@ class PromptWriterApp:
         if not env_result["model_installed"]:
             messagebox.showwarning(
                 "缺少模型",
-                f"未检测到模型 {model_name}。请点击“下载 Gemma4 12B”。"
+                f"未检测到模型 {model_name}。请点击“推荐 Gemma 模型”，选择并下载合适的模型。"
             )
             return
 

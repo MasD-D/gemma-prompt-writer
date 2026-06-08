@@ -84,6 +84,14 @@ Typical use cases:
 - Obsidian-friendly output  
   输出格式适合 Obsidian 管理
 
+
+- Can be used without Obsidian or a save folder  
+  不安装 Obsidian、未设置保存目录时也可以使用
+
+- Copy generated result to clipboard  
+  支持一键复制生成结果
+
+
 - Environment check panel  
   内置环境自检面板
 
@@ -170,6 +178,11 @@ Choose an Obsidian output folder, enter your image idea, and click the generate 
 The app will create a Markdown file in your selected folder.
 
 App 会在你选择的目录中创建一个 Markdown 文件。
+
+
+If you do not select a save folder, the app can still generate prompts, but the result will only be shown in the app window. Please copy the generated result before closing the app.
+
+如果你没有选择保存目录，App 仍然可以生成提示词，但结果只会显示在窗口中，不会自动保存为文件。关闭 App 前请及时复制生成结果。
 
 ---
 

@@ -377,7 +377,7 @@ class PromptWriterApp:
         tk.Label(top_frame, text="模型：").pack(side="left")
         tk.Entry(top_frame, textvariable=self.model_var, width=20).pack(side="left", padx=(0, 12))
 
-        tk.Label(top_frame, text="Obsidian 保存目录：").pack(side="left")
+        tk.Label(top_frame, text="Markdown 保存目录（可选）：").pack(side="left")
         tk.Entry(top_frame, textvariable=self.output_dir_var).pack(side="left", fill="x", expand=True, padx=(0, 8))
         tk.Button(top_frame, text="选择目录", command=self.choose_output_dir).pack(side="left")
 
@@ -425,7 +425,7 @@ class PromptWriterApp:
 
         self.generate_button = tk.Button(
             action_frame,
-            text="生成提示词并保存到 Obsidian",
+            text="生成提示词",
             command=self.generate
         )
         self.generate_button.pack(side="left")
@@ -436,8 +436,31 @@ class PromptWriterApp:
         result_frame = tk.LabelFrame(self.root, text="生成结果")
         result_frame.pack(fill="both", expand=True, padx=pad, pady=(6, pad))
 
+        result_action_frame = tk.Frame(result_frame)
+        result_action_frame.pack(fill="x", padx=pad, pady=(pad, 0))
+
+        tk.Button(
+            result_action_frame,
+            text="复制生成结果",
+            command=self.copy_result_to_clipboard
+        ).pack(side="left")
+
         self.result_text = scrolledtext.ScrolledText(result_frame, wrap="word")
         self.result_text.pack(fill="both", expand=True, padx=pad, pady=pad)
+
+
+    def copy_result_to_clipboard(self):
+        content = self.result_text.get("1.0", tk.END).strip()
+
+        if not content:
+            messagebox.showinfo("暂无内容", "当前没有可复制的生成结果。")
+            return
+
+        self.root.clipboard_clear()
+        self.root.clipboard_append(content)
+        self.root.update()
+        self.set_status("生成结果已复制到剪贴板。")
+
 
     def choose_output_dir(self):
         directory = filedialog.askdirectory(title="选择 Obsidian 中的保存目录")
@@ -617,10 +640,12 @@ class PromptWriterApp:
         lines.append(current_output_dir if current_output_dir else "尚未选择")
         lines.append("")
         lines.append("使用方法：")
-        lines.append("1. 本 App 不直接写入 Obsidian 应用本身，而是把 Markdown 文件写入你选择的文件夹。")
-        lines.append("2. 这个文件夹可以是你的 Obsidian Vault 根目录，也可以是 Vault 里面的某个子文件夹。")
-        lines.append("3. 选择保存目录后，生成的提示词会以 .md 文件形式保存进去。")
-        lines.append("4. Obsidian 通常会自动显示这些新文件；如果没有显示，可以在 Obsidian 里刷新文件列表或重新打开 Vault。")
+        lines.append("1. Obsidian 是可选的；不安装 Obsidian 也可以生成提示词。")
+        lines.append("2. 如果不选择保存目录，生成结果只会显示在窗口中，不会自动保存为文件，请尽快复制。")
+        lines.append("3. 本 App 不直接写入 Obsidian 应用本身，而是把 Markdown 文件写入你选择的文件夹。")
+        lines.append("4. 这个文件夹可以是你的 Obsidian Vault 根目录，也可以是 Vault 里面的某个子文件夹。")
+        lines.append("5. 选择保存目录后，生成的提示词会以 .md 文件形式保存进去。")
+        lines.append("6. Obsidian 通常会自动显示这些新文件；如果没有显示，可以在 Obsidian 里刷新文件列表或重新打开 Vault。")
         lines.append("")
         lines.append("如何获取保存目录：")
         lines.append("1. 在 Finder 中找到你的 Obsidian Vault 文件夹。")
@@ -781,10 +806,6 @@ class PromptWriterApp:
             messagebox.showwarning("缺少输入", "请先输入画面想法。")
             return
 
-        if not output_dir:
-            messagebox.showwarning("缺少 Obsidian 目录", "请先选择 Obsidian 保存目录。")
-            return
-
         model_name = self.model_var.get().strip() or DEFAULT_MODEL_NAME
         env_result = env_check.check_environment(model_name)
 
@@ -842,10 +863,19 @@ class PromptWriterApp:
             )
 
             markdown = build_markdown(user_idea, style_hint, platform_hint, prompts)
-            file_path = save_to_obsidian(output_dir, user_idea, markdown)
 
             self.set_result(markdown)
-            self.set_status(f"已保存：{file_path}")
+
+            if output_dir:
+                file_path = save_to_obsidian(output_dir, user_idea, markdown)
+                self.set_status(f"已保存：{file_path}")
+            else:
+                warning = (
+                    "未设置 Markdown 保存目录。本次结果只显示在窗口中，"
+                    "不会自动保存为文件。请尽快复制生成结果。"
+                )
+                self.set_status("未设置保存目录，请尽快复制生成结果。")
+                self.root.after(0, lambda: messagebox.showwarning("未设置保存目录", warning))
 
         except Exception as e:
             log_error(f"生成失败：{e}")

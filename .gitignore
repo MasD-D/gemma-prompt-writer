@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Release artifacts
+release/
+*.dmg
+*.zip
+
+# Local config / secrets
+.env
+config.json
+*.log
+
+# Generated content
+generated_prompts.md
+prompts.csv
+results.csv
+outputs/
+
+# macOS
+.DS_Store
+
+# App support / temporary
+assets/dmg-background.png
+dist_old_*/
+
+# Legacy / prototype files
+batch_image_call.py
+generate_prompts.py
+prompt_writer.py
+prompt_writer_gui_v0_1_working.py
+prompt_writer_gui_v0_2.py
+templates.csv
